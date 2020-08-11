@@ -179,10 +179,8 @@ function update_stack(game, stack)
 
       local ry = stack.ry - (1.0 - stack.roll_delay/max_roll_delay)
 
-      dbg = ry
       if stack.ray == 1 then
          local y = stack_top_y(stack)
-         dbg = "" .. flr(ry*10)/10 .. " " .. flr(y*10)/10
          if ry <= y+1 then
             add(stack.top, stack.rm)
             stack.roll_delay = 0
@@ -235,7 +233,9 @@ function draw_stack(game, stack, x)
 
    my += movey
 
-   print(stack.center, mx + shiftx + 1, my + 1, 1)
+   if stack.fall_delay == 0 then
+      print(stack.center, mx + shiftx + 1, my + 1, 1)
+   end
 
    for i, marble in pairs(stack.top) do
       my = 32 - i * 6
@@ -374,6 +374,28 @@ function update_game(game)
          end
       end
    end
+
+   if free_to_match then
+      local stack = game.stacks[game.i+1]
+
+      if game.input_y == 1 then
+         if #stack.bottom > 0 then
+            stack.dy=1
+            stack.move_delay=max_move_delay
+         end
+      elseif game.input_y == -1 then
+         if #stack.top > 0 then
+            stack.dy=-1
+            stack.move_delay=max_move_delay
+         end
+      end
+
+      if game.input_x then
+         game.shift_delay=10
+      end
+   end
+
+   game_input_clear(game)
 end
 
 function begin_roll(game)
@@ -390,6 +412,11 @@ function begin_roll(game)
    else
       stack.ray=-1
    end
+
+   if stack.roll_delay > 0 then
+      return
+   end
+
    stack.roll_delay=max_roll_delay
 end
 
@@ -418,11 +445,16 @@ function smallest_height_i(game)
    local smallest_v = stack_height(game, smallest_i)
 
    for i=2,5 do
-      local v = stack_height(game, i)
-      if (v == smallest_v and maybe()) or
-      v < smallest_v then
-         smallest_i = i
-         smallest_v = v
+
+      if game.stacks[i].roll_delay > 0 then
+         
+      else
+         local v = stack_height(game, i)
+         if (v == smallest_v and maybe()) or
+         v < smallest_v then
+            smallest_i = i
+            smallest_v = v
+         end
       end
    end
    return smallest_i
@@ -466,28 +498,21 @@ function game_right(game)
    end
 end
 
+function game_input_clear(game)
+   game.input_y=0
+   game.input_x=false
+end
+
 function game_up(game)
-
-   local stack = game.stacks[game.i + 1]
-
-   if #stack.bottom > 0 then
-      stack.dy=1
-      stack.move_delay=max_move_delay
-   end
+   game.input_y=1
 end
 
 function game_down(game)
-
-   local stack = game.stacks[game.i + 1]
-
-   if #stack.top > 0 then
-      stack.dy=-1
-      stack.move_delay=max_move_delay
-   end
+   game.input_y=-1
 end
 
 function game_shift(game)
-   game.shift_delay=10
+   game.input_x=true
 end
 
 -->8
