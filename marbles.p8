@@ -167,6 +167,7 @@ function init_game_data(height)
    data.marbles = {}
    data.add_top = {}
    data.add_roll={}
+   data.fall={}
 
    for i=1,5 do
       local stack = {}
@@ -254,7 +255,7 @@ function update_game_transition(game)
    if game.lose then
       game.lose.delay -= 1
       if game.lose.delay < 5 and 
-      game.fall == nil then
+      #game.fall == 0 then
          begin_fall_lost_marbles(game)
       end
       if game.lose.delay < 0 then
@@ -262,12 +263,12 @@ function update_game_transition(game)
       end
    end
 
-   if game.fall then
-      game.fall.delay -= 1
-      game.fall.t = 1.0-game.fall.delay/10
-      if game.fall.delay < 0 then
-         lose_and_fall_marbles(game)
-         game.fall = nil
+   for fall in all(game.fall) do
+      fall.delay -= 1
+      fall.t = 1.0-fall.delay/10
+      if fall.delay < 0 then
+         lose_and_fall_marbles(game, fall)
+         del(game.fall, fall)
       end
    end
 
@@ -359,18 +360,16 @@ function add_top_marbles(game, add_top)
    add(game.marbles[add_top.i].stack, add_top.marble, 1)
 end
 
-function lose_and_fall_marbles(game)
-   for i in all(game.fall.mi) do
-      local marbles = game.marbles[i]
-      deli(marbles.stack, marbles.top + 1)
-      marbles.top -= 1
+function lose_and_fall_marbles(game, fall)
+   local marbles = game.marbles[fall.i]
+   deli(marbles.stack, marbles.top + 1)
+   marbles.top -= 1
 
-      local height = marbles.top - marbles.bottom
+   local height = marbles.top - marbles.bottom
 
-      if height < 3 then
-         begin_add_top_marbles(game, i)
-      end
-   end
+   -- if height < 3 then
+   --    begin_add_top_marbles(game, i)
+   -- end
 end
 
 function begin_add_top_marbles(game, i)
@@ -382,11 +381,15 @@ function begin_add_top_marbles(game, i)
 end
 
 function begin_fall_lost_marbles(game)
-   game.fall = {
-      delay = 10,
-      t = 0,
-      mi=game.lose.mi
-   }
+   for i in all(game.lose.mi) do
+
+
+      add(game.fall, {
+             delay=10,
+             t=0,
+             i=i
+      })
+   end
 end
 
 function begin_lose_marbles(game, mi)
