@@ -92,7 +92,7 @@ function draw_side(side, x)
             end
          end
 
-         if j - 1 - marbles.top < 0 then
+         if j-1-marbles.top < 0 then
             if game.fall and
                seq_contains(game.fall.mi, i) then
                   falloffy = 5 * game.fall.t
@@ -101,6 +101,19 @@ function draw_side(side, x)
             end
          end
          print(""..marble, mx + 1, my + 1 + falloffy, 1)
+      end
+   end
+
+   for add_top in all(game.add_top) do
+      local i = add_top.i
+      local marbles=game.marbles[i]
+      local mx = x+1+(i-1)*6
+      local my = 32+(0-1-marbles.top)*6
+
+      local flash = add_top.delay % 3 == 0
+      
+      if flash then
+         print(""..add_top.marble, mx + 1, my + 1, 3)
       end
    end
 
@@ -134,7 +147,7 @@ function init_game_data(height)
       local stack = {}
 
       for i=1,height do
-         add(stack, draw_marble())
+         add(stack, make_marble())
       end
 
       data.marbles[i] = {
@@ -179,7 +192,7 @@ function update_game_transition(game)
       if game.lose.delay < 0 then
          game.lose = nil
       end
-   end   
+   end
 
    if game.fall then
       game.fall.delay -= 1
@@ -187,6 +200,14 @@ function update_game_transition(game)
       if game.fall.delay < 0 then
          lose_and_fall_marbles(game)
          game.fall = nil
+      end
+   end
+
+   for add_top in all(game.add_top) do
+      add_top.delay -= 1
+      if add_top.delay < 0 then
+         add_top_marbles(game, add_top)
+         del(game.add_top, add_top)
       end
    end
 
@@ -212,13 +233,20 @@ function update_game_free(game)
    end
 end
 
+function add_top_marbles(game, add_top)
+   game.marbles[add_top.i].top += 1
+   add(game.marbles[add_top.i].stack, add_top.marble, 1)
+end
+
 function lose_and_fall_marbles(game)
    for i in all(game.fall.mi) do
       local marbles = game.marbles[i]
       deli(marbles.stack, marbles.top + 1)
       marbles.top -= 1
 
-      if marbles.top < 0 then
+      local height = marbles.top - marbles.bottom
+
+      if height < 3 then
          begin_add_top_marbles(game, i)
       end
    end
@@ -226,9 +254,9 @@ end
 
 function begin_add_top_marbles(game, i)
    add(game.add_top, {
-          i,
+          i=i,
           delay=10,
-          draw_marble()
+          marble=make_marble()
    })
 end
 
@@ -248,7 +276,7 @@ function begin_lose_marbles(game, mi)
 end
 
 function game_in_transition(game)
-   return game.lose != nil or game.fall != nil
+   return game.lose != nil or game.fall != nil or #game.add_top != 0
 end
 
 function center_marble(game, i)
@@ -257,7 +285,7 @@ function center_marble(game, i)
    return marble.stack[marble.top + 1]
 end
 
-function draw_marble()
+function make_marble()
    return flr(rnd(3))
 end
 
