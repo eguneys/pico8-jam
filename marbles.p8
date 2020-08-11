@@ -64,15 +64,9 @@ end
 
 function draw_side(side, x)
 
-   local game = side.game
-
    rectfill(x, 0, x + 32, 64, side.bg)
 
-   rectfill(x, 0, x + 32, 4, 1)
-   print(side.name, x, 0, side.bg)
-
-
-   rect(x, 32, x + 31, 32 + 6, 1)
+   local game = side.game
 
    local i = game.i
 
@@ -100,7 +94,18 @@ function draw_side(side, x)
                            my + 5 + falloffy, 2)
             end
          end
-         print(""..marble, mx + 1, my + 1 + falloffy, 1)
+
+
+         local moveoffy = 0
+
+         if game.move_marble then
+            if game.move_marble.i == i then
+               moveoffy = 
+                  game.move_marble.dy * game.move_marble.t * 5 * -1
+            end
+         end
+
+         print(""..marble, mx + 1, my + 1 + falloffy + moveoffy, 1)
       end
    end
 
@@ -117,6 +122,25 @@ function draw_side(side, x)
       end
    end
 
+   for add_roll in all(game.add_roll) do
+      local i = add_roll.i
+      local marbles=game.marbles[i]
+      local mx = x+1+(i-1)*6
+      local my = 32+add_roll.y*6
+
+      local offy = 6 * add_roll.dy * add_roll.t
+
+      my += offy
+
+      print(""..add_roll.marble, mx + 1, my + 1, 3)
+   end
+
+
+   rectfill(x, 0, x + 32, 4, 1)
+   print(side.name, x, 0, side.bg)
+
+
+   rect(x, 32, x + 31, 32 + 6, 1)
 
    rect(x + 1 + i * 6, 32, x + 1 + i * 6 + 5, 32 + 6, 10)
 end
@@ -142,6 +166,7 @@ function init_game_data(height)
 
    data.marbles = {}
    data.add_top = {}
+   data.add_roll={}
 
    for i=1,5 do
       local stack = {}
@@ -161,6 +186,8 @@ function init_game_data(height)
    return data
 end
 
+top_height = 5
+
 match_indexes = {
    { 1, 2, 3, 4, 5 },
    { 1, 2, 3, 4 },
@@ -178,10 +205,51 @@ function update_game(game)
       update_game_free(game)
    end
 
+   update_game_always(game)
+
    game.in_transition = game_in_transition(game)
 end
 
+function update_game_always(game)
+   for add_roll in all(game.add_roll) do
+      add_roll.delay -= 1
+      if add_roll.delay < 0 then
+         add_roll.delay = 10
+         add_roll.y += add_roll.dy
+      end
+      add_roll.t = 1.0-add_roll.delay/10
+
+      if add_roll.dy < 0 then
+         local b = abs(game.marbles[add_roll.i].bottom)
+
+         if (add_roll.y + add_roll.dy) == b then
+
+            add_bottom_add_roll(game, add_roll)
+            del(game.add_roll, add_roll)
+         end
+      else
+         local b = game.marbles[add_roll.i].top
+
+         if abs(add_roll.y + add_roll.dy) == b then
+            add_top_add_roll(game, add_roll)
+            del(game.add_roll, add_roll)
+         end
+      end
+      
+
+   end
+end
+
 function update_game_transition(game)
+
+   if game.move_marble then
+      game.move_marble.delay -= 1
+      game.move_marble.t = 1.0-game.move_marble.delay/10
+      if game.move_marble.delay < 0 then
+         move_marble(game)
+         game.move_marble=nil
+      end
+   end
 
    if game.lose then
       game.lose.delay -= 1
@@ -228,9 +296,62 @@ function update_game_free(game)
 
       if not nomatch then
          begin_lose_marbles(game, mi)
+         begin_add_rolling(game)
          break
       end
    end
+end
+
+function begin_add_rolling(game)
+   local addi = smallest_height_i(game)
+   local marbleg = game.marbles[addi]
+
+   local y = 6
+   local dy = -1
+
+   if marbleg.top < abs(marbleg.bottom) then
+      y = -6
+      dy = 1
+   end
+
+   add(game.add_roll, {
+          marble=make_marble(),
+          i=addi,
+          y=y,
+          dy=dy,
+          delay=10,
+          t=0
+   })
+end
+
+function smallest_height_i(game)
+   local smallest_i = 1
+   local smallest_v = stack_height(game, smallest_i)
+
+   for i=2,5 do
+      local v = stack_height(game, i)
+      if (v == smallest_v and maybe()) or
+      v < smallest_v then
+         smallest_i = i
+         smallest_v = v
+      end
+   end
+   return smallest_i
+end
+
+function stack_height(game, i)
+   return game.marbles[i].top - game.marbles[i].bottom + 1
+end
+
+
+function add_bottom_add_roll(game, add_roll)
+   game.marbles[add_roll.i].bottom -= 1
+   add(game.marbles[add_roll.i].stack, add_roll.marble)
+end
+
+function add_top_add_roll(game, add_roll)
+   game.marbles[add_roll.i].top += 1
+   add(game.marbles[add_roll.i].stack, add_roll.marble, 1)
 end
 
 function add_top_marbles(game, add_top)
@@ -276,7 +397,10 @@ function begin_lose_marbles(game, mi)
 end
 
 function game_in_transition(game)
-   return game.lose != nil or game.fall != nil or #game.add_top != 0
+   return game.lose != nil or 
+      game.fall != nil or 
+      #game.add_top != 0 or
+      game.move_marble != nil
 end
 
 function center_marble(game, i)
@@ -287,6 +411,14 @@ end
 
 function make_marble()
    return flr(rnd(3))
+end
+
+function move_marble(game)
+   local mm = game.move_marble
+   local marbles = game.marbles[mm.i]
+
+   marbles.top += mm.dy
+   marbles.bottom += mm.dy   
 end
 
 function game_left(game)
@@ -302,24 +434,44 @@ function game_right(game)
 end
 
 function game_up(game)
+   if game_in_transition(game) then
+      return
+   end
+
    local marble = game.marbles[game.i + 1]
 
    if marble.bottom < 0 then
-      marble.top += 1
-      marble.bottom += 1
+      game.move_marble = {
+         i=game.i + 1,
+         dy=1,
+         delay=10,
+         t=0
+      }
    end
 end
 
 function game_down(game)
+   if game_in_transition(game) then
+      return
+   end
+
    local marble = game.marbles[game.i + 1]
 
    if marble.top > 0 then
-      marble.top -= 1
-      marble.bottom -= 1
+      game.move_marble={
+         i=game.i+1,
+         dy=-1,
+         delay=10,
+         t=0
+      }
    end
 end
 
 function game_shift(game)
+   if game_in_transition(game) then
+      return
+   end
+
    for i=4,1,-1 do
       local pre=game.marbles[i+1]
       local cur=game.marbles[i]
@@ -334,6 +486,10 @@ function game_shift(game)
 end
 
 -->8
+
+function maybe()
+   return rnd(1)<0.5
+end
 
 function merge(base, extend)
    for k,v in pairs(extend) do
