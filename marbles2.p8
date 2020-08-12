@@ -7,13 +7,15 @@ dbg = nil
 side_player = {
    name="p1",
    bg=7,
-   i = 3,
+   score=0
 }
 
 side_ai = {
    name="ai",
    bg=15,
-   i = 3
+   t=0,
+   idea={},
+   score=0
 }
 
 function _init()
@@ -45,21 +47,25 @@ function update_player(player)
    if btnp(❎) then
       game_shift(game)
    end
-
-   update_game(game)
 end
 
-
-function update_ai(ai)
-
-   //update_game(ai.game)
-
+function update_game_score(a, b)
+   if a.game.add_score > 0 then
+      begin_roll(b.game)
+      a.score += a.game.add_score
+      a.game.add_score = 0
+   end
 end
-
 
 function _update()
    update_player(side_player)
    update_ai(side_ai)
+
+   update_game(side_player.game)
+   update_game(side_ai.game)
+
+   update_game_score(side_player, side_ai)
+   update_game_score(side_ai, side_player)
 end
 
 function draw_side(side, x)
@@ -72,6 +78,7 @@ function draw_side(side, x)
 
    rectfill(x, 0, x + 32, 4, 1)
    print(side.name, x, 0, side.bg)
+   print(side.score, x + 16, 0, side.bg)
 
    rect(x, 32, x + 31, 32 + 6, 1)
 
@@ -95,6 +102,7 @@ end
 
 game_template = {
    i=3,
+   add_score=0,
    shift_delay=0
 }
 
@@ -210,12 +218,18 @@ function draw_stack(game, stack, x)
 
    local flash_hide = false
 
+   local fall_animy = 0
+   local shift_animy = 0
+   local move_animy = 0
+
    if stack.move_delay > 0 then
       movey = (1.0 - stack.move_delay/max_move_delay) * 6 * stack.dy * -1
+      move_animy = stack.move_delay/max_move_delay
    end
 
    if game.shift_delay > 0 then
       shiftx = (1.0 - game.shift_delay/10) * 6
+      shift_animy = game.shift_delay/10
    end
 
    if stack.lose_delay > 0 then
@@ -224,6 +238,7 @@ function draw_stack(game, stack, x)
 
    if stack.fall_delay > 0 then
       fally = (1.0-stack.fall_delay/10) * 6
+      fall_animy = stack.fall_delay/10
    end
 
    if stack.short_delay > 0 then
@@ -234,7 +249,12 @@ function draw_stack(game, stack, x)
    my += movey
 
    if stack.fall_delay == 0 then
-      print(stack.center, mx + shiftx + 1, my + 1, 1)
+
+      if shift_animy != 0 then
+         stack.center.s = (stack.center.s + 0.07) % 1
+      end
+
+      draw_marble(stack.center, mx + shiftx + 1, my + 1, shift_animy)
    end
 
    for i, marble in pairs(stack.top) do
@@ -242,15 +262,24 @@ function draw_stack(game, stack, x)
 
       my += movey
 
+      if move_animy != 0 then
+         marble.s = (marble.s + 0.09) % 1
+      end
+
       if stack.fy == 1 then
          my += fally
+
+         if fall_animy != 0 then
+            marble.s = (marble.s + 0.07) % 1
+         end
+
       end
 
       if flash_hide and
          stack.sy == 1 and
       i == #stack.top then
       else
-         print(marble, mx + 1, my + 1, 1)
+         draw_marble(marble, mx + 1, my + 1, 0)
       end
    end
 
@@ -259,15 +288,23 @@ function draw_stack(game, stack, x)
 
       my += movey
 
+      if move_animy != 0 then
+         marble.s = (marble.s + 0.09) % 1
+      end
+
       if stack.fy == -1 then
          my += fally * -1
+
+         if fall_animy != 0 then
+            marble.s = (marble.s + 0.07) % 1
+         end
       end
 
       if flash_hide and
          stack.sy == -1 and
       i == #stack.bottom then
       else
-         print(marble, mx + 1, my + 1, 1)
+         draw_marble(marble, mx + 1, my + 1, 0)
       end
    end
 
@@ -279,8 +316,15 @@ function draw_stack(game, stack, x)
 
       my += fally
 
-      print(stack.rm, mx + 1, my + 1, 1)
+      stack.rm.s = (stack.rm.s + 0.07) % 1
+
+      draw_marble(stack.rm, mx + 1, my + 1, 0)
    end
+end
+
+function draw_marble(marble, x, y, animy)
+   --print(marble, x, y, 1)
+   sspr(8 + flr(marble.s * 3) * 4, 5 * marble.c, 4, 5, x, y)
 end
 
 function fall_stack(game, stack)
@@ -359,7 +403,7 @@ function update_game(game)
          local m = center_marble(game, mi[1])
          
          for i in all(mi) do
-            if center_marble(game, i) != m then
+            if not marble_equal(center_marble(game, i),  m) then
                nomatch = true
                break
             end
@@ -369,7 +413,7 @@ function update_game(game)
             for i in all(mi) do
                game.stacks[i].lose_delay=10
             end
-               begin_roll(game)
+            game.add_score=#mi
             break
          end
       end
@@ -483,7 +527,14 @@ function center_marble(game, i)
 end
 
 function make_marble()
-   return flr(rnd(3))
+   return {
+      c=flr(rnd(3)),
+      s=0
+   }
+end
+
+function marble_equal(a, b)
+   return a.c == b.c
 end
 
 function game_left(game)
@@ -517,6 +568,188 @@ end
 
 -->8
 
+ai_move_shift = 1
+ai_move_up = 2
+ai_move_down = 3
+ai_move_left = 4
+ai_move_right = 5
+
+x_cursor=1
+y_cursor=2
+
+function update_ai(ai)
+
+   ai.t += 1
+
+   if ai.t % 15 != 0 then
+      return
+   end
+
+   local game = ai.game
+
+   local handled = nil
+
+   dbg = #ai.idea > 0 and ai.idea[1].a
+
+   handled = handled or ai_follow_idea(ai, game)
+
+   handled = handled or ai_shift_match(ai, game)
+   handled = handled or ai_two_match(ai, game)
+   handled = handled or ai_three_match(ai, game)
+
+   handled = handled or ai_follow_idea(ai, game)
+
+   handled = handled or ai_random_move(ai, game)
+
+   ai_make_move(game, handled)
+
+end
+
+function ai_make_move(game, move)
+   if move == ai_move_shift then
+      game_shift(game)
+   elseif move == ai_move_up then
+      game_up(game)
+   elseif move == ai_move_down then
+      game_down(game)
+   elseif move == ai_move_left then
+      game_left(game)
+   elseif move == ai_move_right then
+      game_right(game)
+   end      
+end
+
+function ai_center_match_all(game, mi)
+   local m = game.stacks[mi[1]].center
+   for i in all(mi) do
+      if game.stacks[i].center != m then
+         return false
+      end
+   end
+   return true
+end
+
+function ai_center_match_two(game, mi)
+   local m = game.stacks[mi[1]].center
+   for i=1,2 do
+      if game.stacks[mi[i]].center != m then
+         return false
+      end
+   end
+   return true
+end
+
+function ai_follow_idea(ai, game)
+   local idea = ai.idea[1]
+   if idea != nil then
+      if idea.a == x_cursor then
+         return ai_idea_x_cursor(ai, game, idea)
+      elseif idea.a == y_cursor then
+         return ai_idea_y_cursor(ai, game, idea)
+      end
+   end      
+end
+
+function ai_idea_x_cursor(ai, game, idea)
+   local to = idea.to
+   if to == game.i+1 then
+      del(ai.idea, idea)
+      return ai_follow_idea(ai, game)
+   elseif to < game.i+1 then
+      return ai_move_left
+   else
+      return ai_move_right
+   end
+end
+
+function ai_idea_y_cursor(ai, game, idea)
+   local to = idea.to
+   if to == 0 then
+      del(ai.idea, idea)
+      return ai_move_up
+   elseif to < 0 then
+      idea.to += 1
+      return ai_move_down
+   else
+      idea.to -= 1
+      return ai_move_up
+   end
+end
+
+ai_shift_match_search = {
+   { 1, 2, 5 },
+   { 1, 5, 4 }
+}
+
+ai_three_match_search = {
+   { 1, 3, 4 },
+   { 2, 4, 5 },
+   { 3, 1, 5 },
+   { 4, 1, 2 },
+   { 5, 2, 3 }
+}
+
+ai_two_match_search = {
+   { 1, 2, 3 },
+   { 2, 3, 4 },
+   { 2, 3, 1 },
+   { 3, 4, 5 },
+   { 3, 4, 2 }
+}
+
+function ai_two_match(ai, game)
+   for mi in all(ai_two_match_search) do
+      if ai_center_match_two(game, mi) then
+         add(ai.idea, {
+                a=x_cursor,
+                to=mi[3]
+         })
+         add(ai.idea, {
+                a=y_cursor,
+                to=2
+         })
+         add(ai.idea, {
+                a=y_cursor,
+                to=-4
+         })
+      end
+   end
+end
+
+function ai_three_match(ai, game)
+   for mi in all(ai_three_match_search) do
+      if ai_center_match_all(game, mi) then
+         local upi = mi[1]
+
+         add(ai.idea, {
+                a=x_cursor,
+                to=upi
+         })
+
+         add(ai.idea, {
+                a=y_cursor,
+                to=0
+         })
+      end
+   end
+end
+
+function ai_shift_match(ai, game)
+   for mi in all(ai_shift_match_search) do
+      if ai_center_match_all(game, mi) then
+         return ai_move_shift
+      end
+   end
+
+   return nil
+end
+
+function ai_random_move(ai, game)
+   return flr(rnd(5)) + 1
+end
+
+-->8
+
 function maybe()
    return rnd(1)<0.5
 end
@@ -537,9 +770,18 @@ function seq_contains(seq, e)
 end
 
 __gfx__
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000088006660880000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000685446888586000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700684888884486000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000468484548888000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000048064400880000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+007007000aa006660aa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000006a5446aaa5a6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000006a4aaaaa44a6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000046a4a454aaaa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000004a064400aa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000000cc006660cc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000006c5446ccc5c6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000006c4ccccc44c6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000046c4c454cccc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000004c064400cc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
