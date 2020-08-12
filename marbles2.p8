@@ -6,12 +6,15 @@ dbg = nil
 
 side_player = {
    name="p1",
-   bg=7
+   bg=7,
+   score_delay=0,
+   shake=0
 }
 
 side_ai = {
    name="ai",
    bg=15,
+   score_delay=0,
    t=0,
    idea={}
 }
@@ -21,6 +24,8 @@ function _init()
    cls()
 
    scene=scene_title
+
+   init_scene_intro()
 end
 
 function update_player(player)
@@ -43,13 +48,30 @@ function update_player(player)
    if btnp(❎) then
       game_shift(game)
    end
+
+   dbg = game.combo
+
+   if player.shake > 0 then
+      player.shake -= 1
+   elseif game.combo > 1 then
+      player.shake = game.combo
+   end
 end
 
 function update_game_score(a, b)
-   if a.game.add_score > 0 then
+   if a.score_delay > 0 then
+      a.score_delay -= 1
+      if a.score_delay == 3 then
+         a.score += a.game.add_score
+         a.game.add_score = 0
+      end
+   elseif a.game.add_score > 0 then
       begin_roll(b.game)
-      a.score += a.game.add_score
-      a.game.add_score = 0
+      if a.name == "ai" then
+         begin_roll(b.game)
+         begin_roll(b.game)
+      end
+      a.score_delay = 10
    end
 
    if a.game.over then
@@ -69,9 +91,16 @@ function update_scene_play()
 
    update_game_score(side_player, side_ai)
    update_game_score(side_ai, side_player)
+
+   if side_player.game.sfx != nil then
+      sfx(side_player.game.sfx)
+   elseif side_ai.game.sfx != nil and maybe(0.2) then
+      sfx(side_ai.game.sfx)
+   end
 end
 
 function draw_scene_play()
+
    draw_side(side_player, 0)
    draw_side(side_ai, 32)
 end
@@ -88,7 +117,16 @@ scene_play = {
 function update_scene_intro()
    scene_intro_data.t += 1
 
-   if scene_intro_data.t > 30 * 4 then
+   if scene_intro_data.t < 30 * 3 then
+      if scene_intro_data.t % 30 == 1 then
+         sfx(4)
+      end
+   elseif scene_intro_data.t % 30 == 1 then
+      sfx(5)
+      sfx(6)
+   end
+
+   if scene_intro_data.t == 30 * 4 then
       init_scene_play()
    end
 end
@@ -235,9 +273,23 @@ function draw_side(side, x)
       draw_stack(game, stack, x)
    end
 
+   camera()
+
    rectfill(x, 0, x + 32, 4, 1)
    print(side.name, x, 0, side.bg)
    print(side.score, x + 16, 0, side.bg)
+
+   
+
+   local _x
+
+   if side.name == "p1" then
+      _x = x + (side.score_delay / 10) * 32
+   else
+      _x = x + 32 - (side.score_delay / 10) * 32
+   end
+
+   rectfill(_x, 0, _x + (side.score_delay / 10) * 32, 4, side.bg)
 
    rect(x, 32, x + 31, 32 + 6, 1)
 
@@ -262,7 +314,11 @@ game_template = {
    i=3,
    over=false,
    add_score=0,
-   shift_delay=0
+   shift_delay=0,
+   sfx_timer=0,
+   sfx=nil,
+   combo=0,
+   combo_delay=0
 }
 
 function init_game_data(height)
@@ -486,6 +542,17 @@ function draw_losing_marble(marble, x, y, delay)
 end
 
 function draw_marble(marble, x, y, animy)
+
+   local shakex = 0
+   local shakey = 0
+
+   if side_player.shake > 0 then
+      shakex=sin(rnd() * 0.6 + side_player.shake/3 * 0.4) * 0.5
+      shakey=cos(rnd() * 0.6 + side_player.shake/3 * 0.4) * 0.5
+   end
+
+   camera(shakex, shakey)
+
    --print(marble, x, y, 1)
    sspr(8 + flr(marble.s * 3) * 4, 5 * marble.c, 4, 5, x, y)
 end
@@ -533,13 +600,44 @@ function begin_fall_after_lose_stack(game, stack)
    stack.fall_delay=10
 end
 
+function psfx(game, sfx)
+   if game.sfx_timer == 0 then
+      game.sfx = sfx
+   end
+end
+
+function asfx(game, sfx)
+   game.sfx_timer = 10
+   game.sfx = sfx
+end
+
 function update_game(game)
+
+   game.sfx = nil
+
+   if game.sfx_timer > 0 then
+      game.sfx_timer -= 1
+   end
 
    local full_stacks = true
    local free_stacks = true
 
    for stack in all(game.stacks) do
       update_stack(game, stack)
+
+      if stack.move_delay == 8 then
+         psfx(game, 0)
+      end
+
+      if stack.lose_delay == 8 then
+         if game.combo == 1 then
+            asfx(game, 1)
+         elseif game.combo == 2 then
+            asfx(game, 2)
+         else
+            asfx(game, 3)
+         end
+      end
 
       if stack.move_delay != 0 or
          stack.lose_delay != 0 or
@@ -564,6 +662,11 @@ function update_game(game)
       end
    end
 
+   if game.shift_delay == 9 then
+      psfx(game, 0)
+   end
+
+
    local free_to_match = game.shift_delay == 0 and
       free_stacks
    
@@ -584,8 +687,17 @@ function update_game(game)
             for i in all(mi) do
                game.stacks[i].lose_delay=10
             end
-            game.add_score=#mi
+            game.combo += 1
+            game.add_score=#mi * game.combo
+            game.combo_delay = 3
             break
+         end
+      end
+
+      if game.combo_delay > 0 then
+         game.combo_delay -= 1
+         if game.combo_delay == 0 then
+            game.combo = 0
          end
       end
    end
@@ -594,12 +706,18 @@ function update_game(game)
       local stack = game.stacks[game.i+1]
 
       if game.input_y == 1 then
+         if #stack.top == 5 then
+            asfx(game, 7)
+         end
          if #stack.bottom > 0 and 
          #stack.top < 5 then
             stack.dy=1
             stack.move_delay=max_move_delay
          end
       elseif game.input_y == -1 then
+         if #stack.bottom == 5 then
+            asfx(game, 7)
+         end
          if #stack.top > 0 and
          #stack.bottom < 5 then
             stack.dy=-1
@@ -623,7 +741,7 @@ function begin_roll(game)
    stack.ry = 6
 
    if #stack.top == #stack.bottom then
-      stack.ray=maybe() and 1 or -1
+      stack.ray=maybe(0.5) and 1 or -1
    elseif #stack.top < #stack.bottom then
       stack.ray=1
    else
@@ -667,7 +785,7 @@ function smallest_height_i(game)
          
       else
          local v = stack_height(game, i)
-         if (v == smallest_v and maybe()) or
+         if (v == smallest_v and maybe(0.5)) or
          v < smallest_v then
             smallest_i = i
             smallest_v = v
@@ -749,6 +867,7 @@ ai_move_right = 5
 
 x_cursor=1
 y_cursor=2
+shift_cursor=3
 
 function update_ai(ai)
 
@@ -762,11 +881,8 @@ function update_ai(ai)
 
    local handled = nil
 
-   dbg = #ai.idea > 0 and ai.idea[1].a
-
-   handled = handled or ai_follow_idea(ai, game)
-
    handled = handled or ai_shift_match(ai, game)
+   handled = handled or ai_follow_idea(ai, game)
    handled = handled or ai_two_match(ai, game)
    handled = handled or ai_three_match(ai, game)
 
@@ -789,13 +905,13 @@ function ai_make_move(game, move)
       game_left(game)
    elseif move == ai_move_right then
       game_right(game)
-   end      
+   end
 end
 
 function ai_center_match_all(game, mi)
    local m = game.stacks[mi[1]].center
    for i in all(mi) do
-      if game.stacks[i].center != m then
+      if not marble_equal(game.stacks[i].center, m) then
          return false
       end
    end
@@ -804,12 +920,8 @@ end
 
 function ai_center_match_two(game, mi)
    local m = game.stacks[mi[1]].center
-   for i=1,2 do
-      if game.stacks[mi[i]].center != m then
-         return false
-      end
-   end
-   return true
+   local m2 = game.stacks[mi[2]].center
+   return marble_equal(m, m2)
 end
 
 function ai_follow_idea(ai, game)
@@ -819,8 +931,15 @@ function ai_follow_idea(ai, game)
          return ai_idea_x_cursor(ai, game, idea)
       elseif idea.a == y_cursor then
          return ai_idea_y_cursor(ai, game, idea)
+      elseif idea.a == shift_cursor then
+         return ai_idea_shift_cursor(ai, game, idea)
       end
    end      
+end
+
+function ai_idea_shift_cursor(ai, game, idea)
+   del(ai.idea, idea)
+   return ai_move_shift
 end
 
 function ai_idea_x_cursor(ai, game, idea)
@@ -867,7 +986,10 @@ ai_two_match_search = {
    { 2, 3, 4 },
    { 2, 3, 1 },
    { 3, 4, 5 },
-   { 3, 4, 2 }
+   { 3, 4, 2 },
+   { 1, 3, 2 },
+   { 2, 4, 3 },
+   { 3, 5, 4 }
 }
 
 function ai_two_match(ai, game)
@@ -885,6 +1007,10 @@ function ai_two_match(ai, game)
                 a=y_cursor,
                 to=-4
          })
+         add(ai.idea, {
+                a=shift_cursor
+         })
+         break
       end
    end
 end
@@ -923,8 +1049,8 @@ end
 
 -->8
 
-function maybe()
-   return rnd(1)<0.5
+function maybe(v)
+   return rnd(1)<v
 end
 
 function merge(base, extend)
@@ -1039,3 +1165,12 @@ __gfx__
 00000088888888882228888888000000000000aaaaaaaaa6666aaaaaaa000000000000ccccccccc111115555cc00000000000000000000000000000000000000
 000000088888888888888888800000000000000aaaaaaaa666aaaaaaa00000000000000ccccccccccccc555cc000000000000000000000000000000000000000
 000000000088888888888800000000000000000000aaaaa66aaaaa00000000000000000000cccccccccc55000000000000000000000000000000000000000000
+__sfx__
+010200002d7321d72233712247423b732337422b722317122b712297121b7021b7021b702037021a7021970219702007020070200702007020070200702007020070200702007020070200702007020070200702
+0005000006050100501e0500d05027050150502f0501c050350502505036050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010400000d057140572305716057290571f0572605716057300571d05737057360070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007
+000400000d7571b75727757187572e757107572d75710757277571275731757387572a7573a757007070070700707007070070700707007070070700707007070070700707007070070700707007070070700707
+000300002306023060230602303023030230301900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000400002575025750257502575025750257502575000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700
+000200002c0522c0522f05225052290522505221052210521f0521c0521c0521305213052160522c0020000200002000020000200002000020000200002000020000200002000020000200002000020000200002
+00020000101501315018150131500a1500d1500815005150001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100
