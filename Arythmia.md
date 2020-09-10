@@ -8,6 +8,7 @@
       [x] Circle 1
       [x] Hollow circle 1
       [ ] More 3
+      [ ] Edge
     [ ] Prefabs
      [x] Bullet 1
      [x] Bomb 1
@@ -23,7 +24,7 @@
       - [x] Scale 1
       - [x] Rotation 1
 [x] Level description 1
-    [ ] Randomize generation 2
+    [ ] Randomize generation X
 [ ] Parent Empty object 2
 [ ] Boss 2
 [ ] More levels 3
