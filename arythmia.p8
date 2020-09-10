@@ -21,7 +21,7 @@ function init_play()
    
    t=0
 
-   init_level()
+   init_level(1)
    init_player()
 
    init_edge(1,0)
@@ -60,6 +60,26 @@ function bomb_prefab(st, si, x, y)
    init_object(st + 4, si, 
                any_bullet_frames(x,y,136,y, 20))
    
+end
+
+function laserv_prefab(st, si, x)
+   init_object(st, si, laserv_frames(x))
+end
+
+function laserh_prefab(st, si, y)
+   init_object(st, si, laserh_frames(y))
+end
+
+function bulleth_prefab(st, si, x)
+   init_object(st, si, bulleth_frames(x))
+end
+
+function bulletv_prefab(st, si, y)
+   init_object(st, si, bulletv_frames(y))
+end
+
+function bulletd_prefab(st, si, x, y)
+   init_object(st, si, bulletd_frames(x,y))
 end
 
 function laserv_frames(x)
@@ -129,7 +149,7 @@ function beat_frame(st, l)
    }
 end
 
-function init_level()
+function old_init_level()
 
    bomb_prefab(0, 21, 64, 64)
    bomb_prefab(60, 21, 64, 64)
@@ -558,6 +578,80 @@ function _draw()
    camera()
    print(dbg,0,120,2)
 end
+
+-->8
+
+e_next_beat = 0
+e_laserh = 1
+e_laserv = 2
+e_bulleth = 3
+e_bulletv = 4
+e_bulletd = 5
+e_bomb = 6
+
+level1 = {
+   bpm=40,
+   oss={
+      2,9,60,2,9,60,0,6,53,60,60,0,
+      2,9,30,2,9,120,0,6,53,60,60,0,
+      1,9,30,0,0,
+      3,5,10,3,5,100,0,6,53,60,60,0,
+      4,5,10,4,5,100,0,6,53,60,60,0,
+      5,37,-8,-8,5,37,136,-8,0
+   }
+}
+
+levels = {
+   level1
+}
+
+function init_level(level)
+   level = levels[level]
+
+   local t = 0
+   local i = 1
+
+   while i < #level.oss do
+
+      local os = level.oss[i]
+
+      if os == e_next_beat then
+         t += level.bpm
+         i += 1
+      elseif os == e_laserh then
+         laserh_prefab(t, level.oss[i+1],
+                       level.oss[i+2])
+         i += 3
+      elseif os == e_laserv then
+         laserv_prefab(t, level.oss[i+1],
+                       level.oss[i+2])
+         i += 3
+      elseif os == e_bulleth then
+         bulleth_prefab(t, level.oss[i+1],
+                        level.oss[i+2])
+         i += 3
+      elseif os == e_bulletv then
+         bulletv_prefab(t, level.oss[i+1],
+                        level.oss[i+2])
+         i += 3
+      elseif os == e_bulletd then
+         bulletd_prefab(t, level.oss[i+1],
+                        level.oss[i+2],
+                        level.oss[i+3])
+         i += 4
+      elseif os == e_bomb then
+         bomb_prefab(t, level.oss[i+1],
+                     level.oss[i+2],
+                     level.oss[i+3])
+         i += 4
+      else
+         i = throw
+      end
+
+   end
+   
+end
+
 -->8
 -- https://stackoverflow.com/questions/9324339/how-much-do-two-rectangles-overlap/9325084
 function box_intersect_ratio(a,b)
