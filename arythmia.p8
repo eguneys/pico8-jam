@@ -81,6 +81,32 @@ function draw_helper(hel)
    end
 end
 
+function edgeh_prefab(st, y)
+   local frames = {
+      init_keyframe(m_pos, 0, 120,
+                    {64, y}, {64, y}),
+      init_keyframe(m_scale, 0,60,
+                    {16,-1}, {16,8}),
+      init_keyframe(m_scale, 90,30,
+                    {16,8}, {16,-1})
+   }
+   
+   init_object(st, 9, frames)
+end
+
+function edgev_prefab(st, x)
+   local frames = {
+      init_keyframe(m_pos, 0, 120,
+                    {x, 64}, {x, 64}),
+      init_keyframe(m_scale, 0,60,
+                    {-1, 16}, {8, 16}),
+      init_keyframe(m_scale, 90,30,
+                    {8,16}, {-1,16})
+   }
+   
+   init_object(st, 9, frames)
+end
+
 function bomb_prefab(st, si, x, y)
 
    local beat_frames = {
@@ -160,19 +186,16 @@ function laserv_frames(x)
 end
 
 function laserh_frames(y)
-   local res = {}
-
-   append
-   (res, {
-       init_keyframe(m_pos, 0, 120, 
-                     {64,y}, {64,y}),
-       init_keyframe(m_scale, 0,10,
-                     {16,-1}, {16, 2}),
-       init_keyframe(m_sfx, 0, 4, 
-                     {6,0},{6,2}),
-       init_keyframe(m_scale, 15,10,
-                     {16,2}, {16, -1})
-   })
+   local res = {
+      init_keyframe(m_pos, 0, 120, 
+                    {64,y}, {64,y}),
+      init_keyframe(m_scale, 0,10,
+                    {16,-1}, {16, 2}),
+      init_keyframe(m_sfx, 0, 4, 
+                    {6,0},{6,2}),
+      init_keyframe(m_scale, 15,10,
+                    {16,2}, {16, -1})
+   }
    return res
 end
 
@@ -338,6 +361,8 @@ end
 function update_keyframe(key)
    key.t += 1
    local itime = key.t / key.tl
+
+   itime = ease_outquad(itime)
 
    key.value[1] = lerp(key.evalue[1], key.svalue[1], itime)
    key.value[2] = lerp(key.evalue[2], key.svalue[2], itime)
@@ -673,6 +698,8 @@ e_bulletv = 4
 e_bulletd = 5
 e_bomb = 6
 e_bigscale=7
+e_edgeh=8
+e_edgev=9
 
 level1 = {
    bpm=60,
@@ -680,8 +707,10 @@ level1 = {
       0,0,
       7,5,30,30,0,
       7,5,90,90,0,0,
+      8,0,8,128,0,
+      9,0,9,128,0,
       2,9,60,0,
-      1,9,80,7,5,30,90,7,5,90,30,0,
+      7,5,30,90,7,5,90,30,0,
       1,9,90,2,9,60,2,9,60,0,6,53,60,60,0,
       2,9,30,2,9,120,0,6,41,60,60,0,
       1,9,30,0,0,
@@ -740,6 +769,12 @@ function init_level(level)
                          level.oss[i+3])
 
          i += 4
+      elseif os == e_edgeh then
+         edgeh_prefab(t, level.oss[i+1])
+         i+= 2
+      elseif os == e_edgev then
+         edgev_prefab(t, level.oss[i+1])
+         i+= 2         
       else
          i = throw
       end

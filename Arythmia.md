@@ -1,6 +1,6 @@
 ## Arythmia
 
-[ ] Object Helpers 2-3
+[x] Object Helpers 2-3
 [ ] Objects  1
     [+] Particles
       [x] Square 1
@@ -28,5 +28,5 @@
 [ ] Parent Empty object 2
 [ ] Boss 2
 [ ] More levels 3
-[ ] Zoom in out (global scale) 3
-[ ] More sound 3
+~[ ] Zoom in out (global scale) 3~
+[ ] More music 3
