@@ -1,6 +1,7 @@
 ## Arythmia
 
-    [x] Object Helpers 1
+    [ ] Object Helpers 1
+        - [ ] Text 3
     [x] Objects  1
         [+] Particles
           [x] Square 1
@@ -29,13 +30,18 @@
     [x] Level description 1
         ~[ ] Randomize generation~
     [ ] Menu 2
-        - [ ] Level Select
+        - [x] Level Select
     [ ] Level Finish 2
         - [ ] Stats
           - [ ] Flawless
           - [ ] Deaths
           - [ ] Dashes
           - [ ] Distance
+    [ ] Levels
+        - [ ] Level 1 - Rapture
+        - [ ] Level 2 - Dark Earth
+        - [ ] level 3 - Play Dead
+          - [ ] Boss
     [ ] Parent Empty object 3
     [ ] Boss 2
     [ ] More levels 3
