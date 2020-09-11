@@ -1,7 +1,7 @@
 ## Arythmia
 
     [ ] Object Helpers 1
-        - [ ] Text 3
+        ~- [ ] Text 3~
     [x] Objects  1
         [+] Particles
           [x] Square 1
@@ -19,7 +19,7 @@
          [x] Sweep 1
              [x] Sweep helper
     [x] Collisions 1
-    [ ] Checkpoint 2
+    ~[ ] Checkpoint 2~
         - [ ] UI
     [x] Timeline 
         - [x] Keyframes 1
@@ -29,21 +29,21 @@
           - [x] Rotation 1
     [x] Level description 1
         ~[ ] Randomize generation~
-    [ ] Menu 2
+    [x] Menu 2
         - [x] Level Select
-    [ ] Level Finish 2
-        - [ ] Stats
-          - [ ] Flawless
-          - [ ] Deaths
-          - [ ] Dashes
-          - [ ] Distance
+        - [ ] level completed mark
+    [x] Level Finish 2
+        - [x] Stats
+          - [x] Flawless
+          - [x] Death
+          - [x] Dash
+          - [x] Distance
     [ ] Levels
-        - [ ] Level 1 - Rapture
+        - [x] Level 1 - Rapture
         - [ ] Level 2 - Dark Earth
         - [ ] level 3 - Play Dead
           - [ ] Boss
-    [ ] Parent Empty object 3
-    [ ] Boss 2
-    [ ] More levels 3
+    [ ] More music 2-3
+    [ ] Feedback
+    ~[ ] Parent Empty object 3~
     ~[ ] Zoom in out (global scale) 3~
-    [ ] More music 3
