@@ -48,9 +48,15 @@
         - [x] Level 2
         - [x] End Scene
     [ ] Feedback
+        - [ ] Level length visual
+        - [ ] Helper visuals
+          - [ ] Bomb helper visual
+        - [x] Dash invert colors
+        - [x] Invert colors when hit
+        ~- [ ] Aiming bullets~
         - [x] Lower Restart delay
         - [x] Bomb warning
         - [+] restart transition
-        - [ ] Dash indicator
+        - [x] Dash indicator
     ~[ ] Parent Empty object 3~
     ~[ ] Zoom in out (global scale) 3~
