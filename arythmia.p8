@@ -133,6 +133,15 @@ end
 
 function bomb_prefab(st, si, x, y)
 
+   init_helper(st, 25, x, y, 8, 8)
+   init_helper(st, 25, x+8, y, 8, 8)
+   init_helper(st, 25, x, y+8, 8, 8)
+   init_helper(st, 25, x, y, 8, 8)
+   init_helper(st, 25, x-8, y, 8, 8)
+   init_helper(st, 25, x, y-8, 8, 8)
+
+   st += 30
+
    local beat_frames = {
       init_keyframe(m_pos, 0, 60, {x,y}, {x,y}),
       init_keyframe(m_scale, 0, 4, {-1,-1}, {1,1}),
@@ -565,14 +574,14 @@ function update_player(p)
    if p.collide > 0 then
       p.collide -= 1
       if p.collide == 0 then
-         deli(p.life, #p.life)
+         --deli(p.life, #p.life)
 
          stats.flawless = false
 
          if #p.life == 0 then
             music(-1)
             sfx(4)
-            init_delay=120
+            init_delay=60
 
             stats.death += 1
 
@@ -587,6 +596,17 @@ function update_player(p)
       _p.y += _p.dy
       if _p.dx == 0 and _p.dy == 0 then
          del(p.particles,_p)
+      end
+   end
+
+   if p.dash_time > 0 then
+      for i=0,3 do
+         add(p.particles, {
+                x=player.x+4,
+                y=player.y+4,
+                dx=p.dx * 0.2*i,
+                dy=p.dy * 0.2*i
+         })
       end
    end
    
@@ -742,6 +762,12 @@ function draw_play(play)
    
    draw_player(player)
    
+   if init_delay > 0 then
+      if init_delay < 5 then
+         rectfill(0,0,128,(1.0 - init_delay/5)*128,8)
+      end
+   end
+
    camera()
    print(dbg,0,120,2)
 end

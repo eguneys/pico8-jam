@@ -48,5 +48,9 @@
         - [x] Level 2
         - [x] End Scene
     [ ] Feedback
+        - [x] Lower Restart delay
+        - [x] Bomb warning
+        - [+] restart transition
+        - [ ] Dash indicator
     ~[ ] Parent Empty object 3~
     ~[ ] Zoom in out (global scale) 3~
