@@ -43,7 +43,10 @@
         - [ ] Level 2 - Dark Earth
         - [ ] level 3 - Play Dead
           - [ ] Boss
-    [ ] More music 2-3
+    [ ] More sfx/music 2-3
+        - [x] Level 1
+        - [x] Level 2
+        - [x] End Scene
     [ ] Feedback
     ~[ ] Parent Empty object 3~
     ~[ ] Zoom in out (global scale) 3~
