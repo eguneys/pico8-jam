@@ -40,9 +40,10 @@
           - [x] Distance
     [ ] Levels
         - [x] Level 1 - Rapture
-        - [ ] Level 2 - Dark Earth
-        - [ ] level 3 - Play Dead
-          - [ ] Boss
+        - [x] Level 2 - Dark Earth
+        - [x] Level 3 - Foreigner
+          - [x] Random lasers
+          - [x] Boss
     [ ] More sfx/music 2-3
         - [x] Level 1
         - [x] Level 2
