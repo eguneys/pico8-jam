@@ -49,7 +49,7 @@
         - [x] Level 2
         - [x] End Scene
     [ ] Feedback
-        - [ ] Level length visual
+        - [x] Level length visual
         - [x] Helper visuals
           ~- [ ] Bomb helper visual~
         - [x] Dash invert colors
