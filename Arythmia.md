@@ -28,10 +28,10 @@
           - [x] Scale 1
           - [x] Rotation 1
     [x] Level description 1
-        ~[ ] Randomize generation~
+        [x] Randomize generation (for the boss)
     [x] Menu 2
         - [x] Level Select
-        - [ ] level completed mark
+        - [x] level completed mark
     [x] Level Finish 2
         - [x] Stats
           - [x] Flawless
@@ -50,8 +50,8 @@
         - [x] End Scene
     [ ] Feedback
         - [ ] Level length visual
-        - [ ] Helper visuals
-          - [ ] Bomb helper visual
+        - [x] Helper visuals
+          ~- [ ] Bomb helper visual~
         - [x] Dash invert colors
         - [x] Invert colors when hit
         ~- [ ] Aiming bullets~

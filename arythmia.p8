@@ -7,7 +7,7 @@ paccel=0.3
 daccel=0.5
 pdeccel=1
 
-function init_play(scene)
+function init_play(play)
    sfx_delay = 0
    init_delay = 0
    end_delay = 0
@@ -24,6 +24,8 @@ function init_play(scene)
 
    init_level(stats.current)
    init_player()
+
+   nbobjects = #fsobjects
 
    init_edge(1,0)
    init_edge(-1,0)
@@ -63,8 +65,6 @@ end
 function draw_helper(hel)
    local sx = (hel.si % 16) * 8
    local sy = flr((hel.si + 64) / 16) * 8
-
-   dbg = rnd()
 
    if hel.t % 12 < 4 then
 
@@ -853,8 +853,6 @@ function update_play(play)
       end
    end
 
-   transition(end_scene, stats)
-
    if end_delay > 0 then
       end_delay -= 1
       if end_delay == 0 then
@@ -910,6 +908,10 @@ function draw_play(play)
          rectfill(0,0,128,(1.0 - init_delay/5)*128,8)
       end
    end
+
+   local pt = 1.0-#fsobjects/nbobjects
+   rectfill(0,126,128,126,7)
+   rectfill(0,127,pt*128,127,7)
 
    pal()
    camera()
@@ -1248,7 +1250,7 @@ function draw_end(scene)
    print(scene.stats.death, 64, 72 + 16, 8)
 
    print("distance:", 24, 80 + 16)
-   print(scene.stats.distance, 64, 80 + 16, 8)
+   print(flr(scene.stats.distance), 64, 80 + 16, 8)
 
    print("dash:", 40, 88 + 16)
    print(scene.stats.dash, 64, 88 + 16, 8)
