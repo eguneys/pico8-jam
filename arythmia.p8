@@ -666,7 +666,7 @@ function update_player(p)
    p.x += p.dx
    p.y += p.dy
 
-   stats.distance += p.dx + p.dy
+   stats.distance += _vlength(p.dx, p.dy)
 
    p.t+=1
 
@@ -1386,6 +1386,10 @@ function vdist(v1,v2)
    local dx = v1.x-v2.x
    local dy = v1.y-v2.y
    return sqrt(dx*dx+dy*dy)
+end
+
+function _vlength(x,y)
+   return sqrt(x*x+y*y)
 end
 __gfx__
 00000000000000000007700000000000000000007777777700777700777777770077770077777777007777007777777700777700000000000000000000000000

@@ -1,4 +1,12 @@
+    
 ## Arythmia
+
+Avoidance rhythm game inspired by Project Arrhythmia. Made for 1 bit weekend game jam.
+
+Controls: Arrow keys to move. X to dash.
+
+
+## Plan
 
     [ ] Object Helpers 1
         ~- [ ] Text 3~
