@@ -57,6 +57,7 @@ function update_treasure(t)
    local p = player.li
    if t.x == p.x + p.dx * 4 and
       t.y == p.y + p.dy * 4 then
+         init_undo(undo_hunt, {x=t.x,y=t.y,sp=t.sp})
          init_object(text, t.x, t.y)
          destroy_object(t)
    end
@@ -132,6 +133,18 @@ function update_player(p)
       end
    end
 
+   if p.utimer > 0 then
+      p.utimer -= 1
+      p.t -= 2
+      p.x -= p.dx * 2
+      p.y -= p.dy * 2
+
+      if p.utimer == 0 then
+         p.dx = 0
+         p.dy = 0
+      end
+   end
+
    if p.mtimer > 0 then
       p.mtimer -= 1
       p.t += 2
@@ -141,6 +154,7 @@ function update_player(p)
          init_object(smoke, p.x-p.dx*4, p.y-p.dy*4)
       end
       if p.mtimer == 0 then
+         init_undo(undo_move, {dx=p.dx,dy=p.dy})
          sfx(0)
          p.dx = 0
          p.dy = 0
@@ -178,6 +192,7 @@ player = {
    dy=0,
    mtimer=0,
    btimer=0,
+   utimer=0,
    s=1,
    si=0,
    flipx=false,
@@ -211,6 +226,8 @@ function destroy_object(s)
 end
 
 function load_room()
+   objects = {}
+
    for i=0,15 do
       for j=0,15 do
          local t
@@ -228,7 +245,50 @@ function load_room()
    end
 end
 
+function undo_hunt(i)
+   init_object(treasure,i.x,i.y,i.sp)
+end
+
+function undo_move(i)
+   local p = player.li
+
+   p.dx = i.dx
+   p.dy = i.dy
+   p.utimer=4
+   sfx(6)
+end
+
+function init_undo(type, args)
+   local u = {}
+   merge(args, u)
+
+   u.undo = type
+
+   add(undos.last, u)
+end
+
+function undo()
+   if #undos.all == 0 then
+      return
+   end
+
+   local last = undos.all[#undos.all]
+
+   for i in all(last) do
+      i.undo(i)
+   end
+
+   del(undos.all, last)
+end
+
 function _init()
+
+   r_t = 0
+
+   undos = {
+      last={},
+      all={}
+   }
 
    objects = {}   
 
@@ -241,6 +301,27 @@ function _init()
 end
 
 function _update()
+
+   if btn(🅾️) then
+      r_t += 1
+   else
+      r_t = 0
+   end
+
+   if btnp(❎) then
+      undo()
+   end
+
+   if r_t == 15 then
+      r_t = -30
+      load_room()
+   end
+
+   if #undos.last > 0 then
+      add(undos.all, undos.last)
+      undos.last = {}
+   end
+
    for obj in all(objects) do
       obj.update(obj)
    end
@@ -255,6 +336,12 @@ function _draw()
 
    for obj in all(objects) do
       obj.draw(obj)
+   end
+
+   rectfill(0, 0, 128 * r_t/15, 128 * r_t/15, 1)
+
+   if r_t > 5 then
+      print("hold to restart", 40, 60, 7)
    end
 
    print(dbg, 8, 8, 4)
@@ -356,6 +443,7 @@ __sfx__
 011000201075510755000000f75510755000000f755107550f75510755000000f75510755000000f75510755107551d755000001c75500000000001e7552175500000217550000021755000001c735000001c715
 011000000000000000000001c61500000000000000000000000000000000000000001a61500000000000000000000000001c6150000000000000001a61500000000001c615000000000000000000000000000000
 010b00000e1350e1250e1150020500205002050020500205002050020500205002050020500205002050020500205002050020500205002050020500205002050020500205002050020500205002050020500205
+0108000018754197541c7260070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700
 __music__
 01 02420444
 02 03420444

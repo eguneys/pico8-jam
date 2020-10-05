@@ -25,9 +25,9 @@
       - [x] Level 3
       - [ ] Level 4
       - [ ] Level 5
-    - [ ] Undo 3
-    - [ ] Restart 3
-    - [ ] Status bar 3
+    - [+] Undo 4-5
+    - [x] Restart 3
+    - [ ] Status bar 3?
     - [ ] Level select 5
     - [ ] Refine Levels 5
     - [ ] Level complete 4
