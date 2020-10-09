@@ -60,6 +60,9 @@ function update_treasure(t)
          init_undo(undo_hunt, {x=t.x,y=t.y,sp=t.sp})
          init_object(text, t.x, t.y)
          destroy_object(t)
+
+         local tail = init_object(tail, p.px, p.py, p.tails[#p.tails] or p)
+         add(p.tails, tail)
    end
 end
 
@@ -76,6 +79,27 @@ treasure={
    init=init_treasure,
    update=update_treasure,
    draw=draw_treasure
+}
+
+function update_tail(t)
+   t.x = lerp(t.x, t.p.px, 0.4)
+   t.y = lerp(t.y, t.p.py, 0.4)
+end
+
+function draw_tail(t)
+   spr(49, t.x, t.y)
+end
+
+function init_tail(t, p)
+   t.p = p
+end
+
+tail = {
+   px=0,
+   py=0,
+   update=update_tail,
+   draw=draw_tail,
+   init=init_tail
 }
 
 
@@ -100,19 +124,34 @@ function update_player(p)
    if p.dx == 0 and p.dy == 0 then
       if input_x != 0 then
          if is_edge(p, input_x, 0) or
-         is_solid(p, input_x, 0) then
+         is_solid(p, input_x, 0) or
+         is_tail(p, input_x, 0) then
             p.dx = input_x
             p.btimer = 2
          else
+            for t in all(p.tails) do
+               t.px = t.x
+               t.py = t.y
+            end
+
+            p.px = p.x
+            p.py = p.y
             p.dx = input_x
             p.mtimer=4
          end
       elseif input_y != 0 then
          if is_edge(p, 0, input_y) or
-         is_solid(p, 0, input_y) then
+         is_solid(p, 0, input_y) or
+         is_tail(p, 0, input_y) then
             p.dy = input_y
             p.btimer = 2            
          else
+            for t in all(p.tails) do
+               t.px = t.x
+               t.py = t.y
+            end
+            p.px = p.x
+            p.py = p.y
             p.dy = input_y
             p.mtimer=4
          end
@@ -181,11 +220,14 @@ function draw_player(p)
 end
 
 function init_player(p)
-   
+   player.li = p
+   p.tails = {}
 end
 
 player = {
    t=0,
+   px=0,
+   py=0,
    x=0,
    y=0,
    dx=0,
@@ -209,8 +251,6 @@ function init_object(type, x, y, m)
 
    merge(type, obj)
 
-   type.li = obj
-
    obj.x = x
    obj.y = y
 
@@ -226,7 +266,13 @@ function destroy_object(s)
 end
 
 function load_room()
-   objects = {}
+
+   undos = {
+      last={},
+      all={}
+   }
+
+   objects = {}   
 
    for i=0,15 do
       for j=0,15 do
@@ -255,6 +301,10 @@ function undo_move(i)
    p.dx = i.dx
    p.dy = i.dy
    p.utimer=4
+
+   -- destroy_object(p.tails[1])
+   -- if #p.tails>1 then p.tails[2].p = p end
+   -- del(p.tails, p.tails[1])
    sfx(6)
 end
 
@@ -284,13 +334,6 @@ end
 function _init()
 
    r_t = 0
-
-   undos = {
-      last={},
-      all={}
-   }
-
-   objects = {}   
 
    room = {}
 
@@ -347,6 +390,15 @@ function _draw()
    print(dbg, 8, 8, 4)
 end
 
+function is_tail(p, ox, oy)
+   local xy = {x=p.x + ox * 8,y=p.y + oy * 8}
+   for t in all(p.tails) do
+      if vdist(xy, t) < 4 then
+         return true
+      end
+   end
+   return false
+end
 
 function is_edge(p, ox, oy)
    return p.x/8 + ox < 0 or p.x/8 + ox > 15 or
@@ -379,8 +431,14 @@ function appr(value, target, amount)
    end
 end
 
-function lerp(value, target)
-   return value + (target - value) * 0.1
+function lerp(value, target, factor)
+   return value + (target - value) * factor
+end
+
+function vdist(v1,v2)
+   local dx = v1.x-v2.x
+   local dy = v1.y-v2.y
+   return sqrt(dx*dx+dy*dy)
 end
 
 __gfx__
