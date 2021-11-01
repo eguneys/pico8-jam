@@ -1,0 +1,3 @@
+- [ ] Allow multiple triangles at once
+- [ ] Adjust triangle area
+- [ ] Adjust point spawn duration
