@@ -4,176 +4,122 @@ __lua__
 
 dbg = ""
 function _init()
- ps = {}
- ls = {}
- ts = {}
- add_t = 0
-
-
-
- local p1 = v_new(0, 1.5)
- local p2 = v_new(-1, 0)
- local p3 = v_new(1, 0)
-
- dbg = v_angle(p1, p2, p3)
-end
-
-function genp()
- local x, y = rnd(128), rnd(128)
- return { x = x, y = y, t = 0, p = rnd(20) + 10, r = rnd(6) - 3, basex = x, basey = y }
-end
-
-function genl()
- local p1,p2 = rnd(ps), rnd(ps)
-
- local mag = v_length(v_sub(p1, p2))
- local d1 = v_normal(v_sub(p1, p2))
- local d1mag = v_scale(d1, 4*mag / 128)
-
-
- del(ps, p1)
- del(ps, p2)
-
-
- return {
-  t=0,
-  p1=p1,
-  p2=p2,
-  d1=d1,
-  mag=mag,
-  d1mag=d1mag
+ player = {
+  x=50,
+  y=50,
+  itheta=0,
+  daccel=0,
+  theta=0
  }
 end
 
-function gent(p1)
- local l1 = rnd(ls)
+function update_player()
 
-
- del(ps, p1)
- del(ls, l1)
-
- local p2, p3 = l1.p1, l1.p2
-
- local midp = v_mid(v_mid(p1, p2), p3)
-
- return {
-  p1=p1,
-  p2=p2,
-  p3=p3,
-  midp=midp,
-  t=0
- }
-end
-
-function updatep(p)
- p.t += 1
- p.x = p.basex
- p.y = p.basey
-
-
- if p.x < 0 or p.x > 128 or
- p.y < 0 or p.y > 128 then
-  del(ps, p)
+ local ix, iy = 0, 0
+ if btn(0) then
+  ix = -1
  end
-end
-
-function updatel(l)
- l.t += 1
-
- l.p1 = v_mod(v_add(l.p1, l.d1mag), 128)
- l.p2 = v_mod(v_add(l.p2, l.d1mag), 128)
-
-
- if #ls > 5 then
-  del(ls, l)
-  return
+ if btn(1) then
+  ix = 1
+ end
+ if btn(2) then
+  iy = -1
+ end
+ if btn(3) then
+  iy = 1
  end
 
- if l.t < 60 or #ts >= 2 then
-  return
- end
- 
+ local intheta = atan2(-ix, -iy)
+ local diftheta = player.theta - intheta
+ local absdiftheta = abs(diftheta)
 
- for p in all(ps) do
-  if v_angle(l.p1, p, l.p2) > 0.4 then
-   local _ts = gent(p)
-   add(ts, _ts)
-   break
+ if ix ~= 0 or iy ~= 0 then
+  player.theta = appr(player.theta, intheta, 0.08)
+
+  if absdiftheta < 0.25 then
+
+   player.daccel = appr(player.daccel, 3.0 - absdiftheta * 20, 0.1 + 0.1 - 0.1 * absdiftheta)
+  else
+   player.daccel = appr(player.daccel, 0, absdiftheta * 3)
   end
+ else
+  player.daccel = appr(player.daccel, 0, 0.2)
  end
 
+ player.theta %= 1
+ player.itheta = flr((player.theta) * 12)
+
+ px = -cos(player.theta)
+ py = -sin(player.theta)
+
+
+ player.x += px * player.daccel
+ player.y += py * player.daccel
+
 end
 
-function updatet(t)
- t.t += 1
- local theta = abs(sin(t.t/30/2)/30)
- t.p1 = v_add(v_rotate(v_sub(t.p1, t.midp), theta), t.midp)
- t.p2 = v_add(v_rotate(v_sub(t.p2, t.midp), theta), t.midp)
- t.p3 = v_add(v_rotate(v_sub(t.p3, t.midp), theta), t.midp)
-end
+-- spr, flipx, flipy
+-- 0 - 1 / 8
+FLIPS = {
+ { 2, true, true },
+ { 3, true, true },
+ { 1, true, true },
+ { 1, false, true },
+ { 3, false, true },
+ { 2, false, true },
+ { 2, false, false },
+ { 3, false, false },
+ { 1, false, false },
+ { 1, true, false },
+ { 3, true, false },
+ { 2, true, false },
+}
 
+function draw_player()
+
+
+ local flips = FLIPS[player.itheta + 1]
+
+ pal(12, 0)
+ spr(flips[1], player.x + 1, player.y + 1, 1, 1, flips[2], flips[3])
+ pal()
+ spr(flips[1], player.x, player.y, 1, 1, flips[2], flips[3])
+end
 
 function _update()
- add_t += 1
-
- if add_t % 10 == 0 then
-  if #ps >= 3 then
-   local _ls = genl()
-   add(ls, _ls)
-  end
- end
-
- if add_t % 30 == 0 then
-  add(ps, genp())
- end
-
-
- for p in all(ps) do
-  updatep(p)
- end
-
- for l in all(ls) do
-  updatel(l)
- end
-
- for t in all(ts) do
-  updatet(t)
- end
-
+ update_player()
 end
 
 
 function _draw()
   cls()
 
-
   rectfill(0, 0, 128, 128, 9)
 
 
-  for p3 in all(ps) do
-   circfill(p3.x, p3.y, 1, 7)
-  end 
+  draw_player()
 
-  for l2 in all(ls) do
-   circfill(l2.p1.x, l2.p1.y, 2, 4)
-    line(l2.p1.x, l2.p1.y, l2.p2.x, l2.p2.y, 7)
-  end
+  print(dbg, 0)
+end
 
+-->8
 
-  for t3 in all(ts) do
-   circfill(t3.p1.x, t3.p1.y, 2, 0)
-   circfill(t3.p2.x, t3.p2.y, 2, 0)
-   circfill(t3.p3.x, t3.p3.y, 2, 0)
-   circfill(t3.midp.x, t3.midp.y, 2, 1)
-   line(t3.p1.x, t3.p1.y, t3.p2.x, t3.p2.y, 7)
-   line(t3.p2.x, t3.p2.y, t3.p3.x, t3.p3.y, 7)
-   line(t3.p1.x, t3.p1.y, t3.p3.x, t3.p3.y, 7)
-  end
+function is_between(value, _min, _max)
+ return value >= _min and value < _max
+end
 
-  print(dbg)
+function appr(value, target, by)
+ return (value < target) and min(target, value + by) or max(target, value - by)
 end
 
 
+function acos(x)
+ return atan2(x,-sqrt(1-x*x))
+end
+
+function asin(y)
+ return atan2(sqrt(1-y*y),-y)
+end
 
 -->8
 function v_new(x, y)
@@ -227,18 +173,16 @@ function v_dot(v1, v2)
  return v1.x * v2.x + v1.y * v2.y
 end
 
-function v_angle(va, vb, vc)
-
- local ab = atan2(va.x - vb.x, va.y - vb.y)
- local bc = atan2(vc.x - vb.x, vc.y - vb.y)
-
- return ab - bc
+function v_angle(va, vb)
+ return atan2(vb.x - va.x, vb.y - va.y)
 end
 
 __gfx__
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00077000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00700700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000cc0000000000000000cc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000cccc000cccc000000ccccc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0070070000cc0c00ccccccc00cccc0cc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000770000cc0ccc0c0cc0cccccc000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000770000ccc0cc0cc00c0ccccc0ccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+007007000ccc0cc0ccccccc0cc0ccc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000000cc0ccc00cccc0000ccccc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000cccc000000000000ccc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
