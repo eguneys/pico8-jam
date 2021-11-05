@@ -20,7 +20,9 @@ function _init()
   t_dash=0,
   itheta=0,
   daccel=0,
-  theta=0
+  theta=0,
+  knock = false,
+  t_stun = 0
  }
 
  homings = {}
@@ -28,8 +30,6 @@ function _init()
  lines = {}
 
  shards = {}
-
- polygons = {}
 
  food = nil
 
@@ -75,6 +75,27 @@ FLIPS = {
 
 
 
+function update_player_knock()
+
+ player.t_stun = appr(player.t_stun, 0, 1)
+
+ if player.t_stun > 0 then
+  player.daccel = appr(player.daccel, 0, 1)
+  return
+ end
+
+ if player.t_dash > 0 then return end
+ if not player.knock then return end
+
+ player.knock = false
+
+
+ player.t_stun = 6 
+ player.theta += 0.5
+ player.daccel = 4 
+
+
+end
 
 function update_player()
 
@@ -96,6 +117,11 @@ function update_player()
  end
  if btn(3) then
   iy = 1
+ end
+
+ if player.t_stun > 0 then
+  ix = 0
+  iy = 0
  end
 
  local intheta = atan2(-ix, -iy)
@@ -149,15 +175,19 @@ function update_player()
 
  if player.x < -4 then
   player.x = -4
+  player.daccel = 0
  end
  if player.x > 124 then
   player.x = 124
+  player.daccel = 0
  end
  if player.y < -4 then
   player.y = -4
+  player.daccel = 0
  end
  if player.y > 124 then
   player.y = 124
+  player.daccel = 0
  end
 
 
@@ -176,6 +206,9 @@ end
 
 function draw_player()
 
+ if player.t_stun % 3 == 1 then
+  return
+ end
 
  local flips = FLIPS[player.itheta + 1]
 
@@ -492,55 +525,9 @@ end
 -->8
 --  }}}
 
-function add_polygon()
-
-  local li = rnd(lines)
-
-  if li == nil then return end
-
-  li.p1.ref += 1
-  li.p2.ref += 1
 
 
-  local po = {
-   p1=li.p1,
-   p2=li.p2,
-   p3=nil
-  }
 
-
-  add(polygons, po)
-
-end
-
-function update_polygon(po)
- 
-
- local theta = v_angle(po.p1, po.p2) + 0.2
-
- local p3 = v_add(po.p1, v_new(cos(theta) * 30,
- sin(theta) * 30))
-
- po.p3 = p3
-
-
- if is_outside(po.p1) and is_outside(po.p2) then
-  del(polygons, po)
- end
-
-end
-
-function draw_polygon(po)
-
- if po.p3 == nil then
-  return
- end
-
-
- line(po.p1.x, po.p1.y, po.p2.x, po.p2.y, 12)
- line(po.p2.x, po.p2.y, po.p3.x, po.p3.y)
- line(po.p3.x, po.p3.y, po.p1.x, po.p1.y)
-end
 
 -- {{{ junk
 function add_food()
@@ -567,14 +554,13 @@ function _update()
   add_homing(0, 0)
  elseif rnd() < 0.05 then
   add_homing(0, rnd(128))
- elseif rnd() < 0.02 then
-   add_polygon()
  end
 
  if rnd() < 0.1 then
   add_line()
  end
 
+ update_player_knock()
  update_player()
  update_food()
 
@@ -588,10 +574,6 @@ function _update()
 
  for sh in all(shards) do
   update_shard(sh)
- end
- 
- for po in all(polygons) do
-  update_polygon(po)
  end
  
  update_score()
@@ -624,11 +606,6 @@ function _draw()
  for sh in all(shards) do
   draw_shard(sh)
  end
-
- for po in all(polygons) do
-  draw_polygon(po)
- end
-
 
  print(dbg, 0)
 end
