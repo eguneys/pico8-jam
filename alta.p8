@@ -14,8 +14,8 @@ function _init()
  sfx_delay = 0
 
  player = {
-  x = 0,
-  y = 0,
+  x = 64,
+  y = 64,
   t_dashgrace=0,
   t_dash=0,
   itheta=0,
@@ -29,8 +29,15 @@ function _init()
 
  shards = {}
 
+ polygons = {}
+
+ food = nil
+
+ add_food()
 end
 
+
+-- {{{ 
 
 -- dx, dy
 ATTACKS = {
@@ -277,6 +284,7 @@ function update_homing(homing)
 
  if outside or homing.ref < 0 then
   del(homings, homing)
+  homing.ref = -10
  end
 
  local active = (homing.t % 300) < 100
@@ -294,7 +302,7 @@ function update_homing(homing)
   mult *= 2
  end
 
- local vtarget = active and v_new(player.x, player.y) or v_new(128, 128)
+ local vtarget = active and v_new(player.x, player.y) or v_new(200, 200)
  local targettheta = -v_angle(vtarget, v_new(homing.x, homing.y))
 
  homing.theta = appra(homing.theta, targettheta, 0.01 * mult)
@@ -321,8 +329,18 @@ function update_homing(homing)
  for h2 in all(homings) do
   if h2 ~= homing then
    if v_distance(h2, homing) < 4 then
-    del(homings, h2)
-    del(homings, homing)
+
+    if (h2.ref <= 0) then
+     del(homings, h2)
+     break
+    end
+    if (homing.ref <= 0) then
+     del(homings, homing)
+     break
+    end
+
+    homing.daccel *= 3
+    homing.theta += 0.5
    end
   end
  end
@@ -471,6 +489,77 @@ function draw_score()
 
 end
 
+-->8
+--  }}}
+
+function add_polygon()
+
+  local li = rnd(lines)
+
+  if li == nil then return end
+
+  li.p1.ref += 1
+  li.p2.ref += 1
+
+
+  local po = {
+   p1=li.p1,
+   p2=li.p2,
+   p3=nil
+  }
+
+
+  add(polygons, po)
+
+end
+
+function update_polygon(po)
+ 
+
+ local theta = v_angle(po.p1, po.p2) + 0.2
+
+ local p3 = v_add(po.p1, v_new(cos(theta) * 30,
+ sin(theta) * 30))
+
+ po.p3 = p3
+
+
+ if is_outside(po.p1) and is_outside(po.p2) then
+  del(polygons, po)
+ end
+
+end
+
+function draw_polygon(po)
+
+ if po.p3 == nil then
+  return
+ end
+
+
+ line(po.p1.x, po.p1.y, po.p2.x, po.p2.y, 12)
+ line(po.p2.x, po.p2.y, po.p3.x, po.p3.y)
+ line(po.p3.x, po.p3.y, po.p1.x, po.p1.y)
+end
+
+-- {{{ junk
+function add_food()
+ food = { x = 10 + rnd(110), y = 10 + rnd(110) }
+end
+
+function update_food()
+ if food == nil then return end
+end
+
+function draw_food()
+ if food == nil then return end
+
+ circfill(food.x, food.y, 2)
+
+end
+
+-- }}}
+
 function _update()
 
  update_sfx()
@@ -478,14 +567,16 @@ function _update()
   add_homing(0, 0)
  elseif rnd() < 0.05 then
   add_homing(0, rnd(128))
+ elseif rnd() < 0.02 then
+   add_polygon()
  end
-
 
  if rnd() < 0.1 then
   add_line()
  end
 
  update_player()
+ update_food()
 
  for hom in all(homings) do
   update_homing(hom)
@@ -497,6 +588,10 @@ function _update()
 
  for sh in all(shards) do
   update_shard(sh)
+ end
+ 
+ for po in all(polygons) do
+  update_polygon(po)
  end
  
  update_score()
@@ -511,6 +606,7 @@ function _draw()
 
  draw_score()
 
+ draw_food()
  draw_player()
 
  for edge in all(edges) do
@@ -528,6 +624,11 @@ function _draw()
  for sh in all(shards) do
   draw_shard(sh)
  end
+
+ for po in all(polygons) do
+  draw_polygon(po)
+ end
+
 
  print(dbg, 0)
 end
@@ -584,6 +685,11 @@ function line_line(l1, l2, c1, c2)
  return t >= 0 and t <= 1.0 and u >= 0 and u <= 1.0
 
 
+end
+
+function v_appr(v1, v2, by)
+ return v_new(appr(v1.x, v2.x, by),
+ appr(v1.y, v2.y, by))
 end
 
 -->8
