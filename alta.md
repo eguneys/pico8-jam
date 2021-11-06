@@ -8,15 +8,18 @@ Todo
 
 
 Secondary Mechanic
-- [ ] Lines form triangle
-- [ ] Triangle rotate with homing
-- [ ] Triangle edges knockback the player
-- [ ] Player carry food around
+
+~- [ ] Lines form triangle~
+~- [ ] Triangle rotate with homing~
+~- [ ] Triangle edges knockback the player~
+~- [ ] Player carry food around~
 
 
 
 Fun
-- [ ] Improve dash
+- [ ] Delay bad lines
+- [ ] Wiggly lines
+- [ ] Dash trail
 - [ ] Multiply score
 - [ ] Background parallax
 - [ ] Camera scroll
