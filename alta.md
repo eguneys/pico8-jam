@@ -7,20 +7,29 @@ Todo
 - [ ] Assymetric, non linear game play
 
 
-Secondary Mechanic
-
 ~- [ ] Lines form triangle~
 ~- [ ] Triangle rotate with homing~
 ~- [ ] Triangle edges knockback the player~
 ~- [ ] Player carry food around~
 
 
+- [ ] Hard to break lines
+- [ ] Third line type
+- [x] Limit line length
+- [ ] Drop bombs
+- [ ] How often lines appear (wave system)
+- [ ] Knockback
+- [ ] Flash on fail
 
 Fun
+- [ ] Visual Coherence
+- [ ] Bigger html control info
+- [ ] Camera shake
+- [ ] Improve bug animation
 - [ ] Delay bad lines
 - [ ] Wiggly lines
 - [ ] Dash trail
 - [ ] Multiply score
-- [ ] Background parallax
-- [ ] Camera scroll
-- [ ] 
+- [ ] Pickup star fx
+- [x] Background parallax
+- [x] Camera scroll
