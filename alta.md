@@ -1,16 +1,12 @@
-Current
-dash to brake the lines and score points, nothing hurts you.
-- Arrow keys to move
-- X to dash
-Todo 
+- [ ] Drop bombs
+- [ ] Lives
+- [ ] 3 colors
+- [ ] Time
+- [ ] More world space
+
+
 - [ ] Extend viewport a small amount, with a camera
 - [ ] Assymetric, non linear game play
-
-
-~- [ ] Lines form triangle~
-~- [ ] Triangle rotate with homing~
-~- [ ] Triangle edges knockback the player~
-~- [ ] Player carry food around~
 
 
 - [ ] Hard to break lines
