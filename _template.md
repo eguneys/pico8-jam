@@ -7,6 +7,9 @@
 }
   </style>
   <div class="info">
+    Alta V.1
+  </div>
+  <div class="info">
     X to Dash
   </div>
   <div class="info">

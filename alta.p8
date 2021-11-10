@@ -11,7 +11,7 @@ function _init()
 
 
  c_music = -1
- amusic(8)
+ --amusic(8)
  danger = 0
  bombs = {}
 
@@ -861,7 +861,7 @@ end
 
 function add_regular()
 
- if rnd() < 0.04 then
+ if rnd() < 0.24 then
   add_homing(-20, -20, 200, 200)
  elseif rnd() < 0.05 then
   add_homing(0, rnd(200) - 30, 200, 200)
@@ -876,7 +876,7 @@ function add_regular()
 
 
 
- if rnd() < 0.18 then
+ if rnd() < 0.5 then
   add_line()
  end
 end
@@ -939,7 +939,7 @@ function update_bomb_shard(bo)
 end
 
 function draw_bomb_shard(bo)
- circfill(bo.x, bo.y, bo.r, bo.r < 2 and 7 or 8)
+ circfill(bo.x, bo.y, bo.r, bo.r < 3 and 7 or 8)
 end
 
 function _update()
@@ -950,7 +950,7 @@ function _update()
 
  update_sfx()
  if danger == 0 then
-  amusic(8)
+  amusic(0)
  else
   amusic(1)
  end
@@ -1001,7 +1001,8 @@ function _draw()
  cls()
  camera()
 
- rectfill(0, 0, 128, 128, 0)
+
+ rectfill(0, 0, 128, 128, 1)
 
 
  camera(_camera.x * 0.6, _camera.y * 0.6)
