@@ -5,13 +5,16 @@ __lua__
 dbg = ""
 function _init()
 
+ danger = 0
+ bombs = {}
+
+ energy = 10 
 
  grass = {}
 
 
  add_grass()
 
- dbg = #grass
  wx = 180
  wy = 180
 
@@ -220,6 +223,7 @@ function update_player()
  player.hit2 = v_sub(player.hit, ixy)
  player.hit = v_add(player.hit, ixy)
 
+ player.hitmid = v_mid(player.hit, player.hit2)
 end
 
 function draw_player()
@@ -239,11 +243,13 @@ function draw_player()
  --line(player.hit.x, player.hit.y, player.hit2.x, player.hit2.y, 7)
 end
 
-function add_homing(x, y)
+function add_homing(x, y, tx, ty)
  if #homings > 12 then
   return
  end
  local dist = rnd(homings)
+
+ local target = v_new(tx, ty)
  local hom = {
   x = x,
   y = y,
@@ -252,6 +258,7 @@ function add_homing(x, y)
   atimer=0,
   dist=dist,
   theta=sin(rnd(1)) * 0.1,
+  target = target,
   daccel=0
  }
 
@@ -374,7 +381,7 @@ function update_homing(homing)
   mult *= 2
  end
 
- local vtarget = active and v_new(player.x, player.y) or v_new(200, 200)
+ local vtarget = active and v_new(player.x, player.y) or homing.target
  local targettheta = -v_angle(vtarget, v_new(homing.x, homing.y))
 
  homing.theta = appra(homing.theta, targettheta, 0.01 * mult)
@@ -554,6 +561,19 @@ function update_score()
 
 end
 
+function draw_energy()
+ for i=1,energy do
+  spr(23, 90 + i * 3, 1)
+ end
+ local col = danger > 0 and 8 or 12
+ print('e', 100, 1, col)
+ print('n', 104, 1, col)
+ print('e', 108, 1, col)
+ print('r', 112, 1, col)
+ print('g', 116, 1, col)
+ print('y', 120, 1, col)
+end
+
 
 function draw_score()
 
@@ -578,8 +598,6 @@ function draw_score()
   local t = score.iy / 5 
   rectfill(t * 128, 0, 20 + t * 10, 6, 7)
  end
- 
-
 end
 
 -->8
@@ -639,6 +657,9 @@ function update_food(fo)
  end
 
  if fo.t < 100 and fo.t > 30 and v_distance(fo, player) < 8 then
+  if not fo.good then
+   danger = 150 + rnd(50)
+  end
   fo.t = 100
  end
 
@@ -675,7 +696,6 @@ function draw_food(fo)
   if not fo.good then
    --pal(7, 0)
   end
-  --circfill(fo.x, fo.y, 2, 0)
   spr(s, fo.x, fo.y + sin(fo.is % 4 * 0.2 + (fo.x / 128) * 0.2)* 2)
 
   pal()
@@ -747,6 +767,114 @@ function draw_grass(gr)
  spr(76 + gr.s, gr.x, gr.y)
 end
 
+function add_bomb(x, y)
+ local bo = {
+  x = x,
+  y = y,
+  daccel=6,
+  t = 20,
+  tdie=10 + sin(rnd()) * 3,
+  r = 6 + rnd(10)
+ }
+
+ add(bombs, bo)
+end
+
+function update_bomb(bo)
+
+ bo.daccel = appr(bo.daccel, 1, 1)
+ bo.t = appr(bo.t, 0, bo.daccel)
+ 
+
+ bo.ir = 4 + bo.r - smooth((bo.t / 20)) * bo.r
+
+  if 
+  point_circle(player.hit, bo, bo.ir) or
+  point_circle(player.hitmid, bo, bo.ir) then
+
+
+
+   if player.t_dash > 0 then
+    del(bombs, bo)
+
+
+    for i=1,4 do
+     local x = bo.x + cos(i/4) * bo.ir
+     local y = bo.y + sin(i/4) * bo.ir
+
+     local x2 = bo.x + cos((i+1)/4) * bo.ir
+     local y2 = bo.y + sin((i+1)/4) * bo.ir
+
+     add_shard({good=true,p1={x=x,y=y},p2={x=x2,y=y2}}, 1)
+     add_shard({p1={x=x,y=y},p2={x=x2,y=y2}}, 1)
+
+    end
+   end
+
+  end
+
+
+
+ if bo.t == 0 then
+
+  bo.tdie = appr(bo.tdie, 0, 1)
+
+  if bo.tdie == 0 then
+   del(bombs, bo)
+  end
+ end
+end
+
+function draw_bomb(bo)
+ if bo.t % 6 < 3 then
+ fillp(░)
+ circfill(bo.x, bo.y, bo.ir, 8)
+ fillp()
+end
+ circ(bo.x, bo.y, bo.ir, 7)
+end
+
+function add_regular()
+
+ if rnd() < 0.04 then
+  add_homing(-20, -20, 200, 200)
+ elseif rnd() < 0.05 then
+  add_homing(0, rnd(200) - 30, 200, 200)
+ end
+
+
+ if rnd() < 0.04 then
+  add_homing(150, -20, 0, 200)
+ elseif rnd() < 0.05 then
+  add_homing(150, rnd(200) - 30, 0, 200)
+ end
+
+
+
+ if rnd() < 0.18 then
+  add_line()
+ end
+end
+
+function add_danger()
+ if rnd() < 0.1 then
+  add_bomb(rnd(128), rnd(128))
+ end
+end
+
+function draw_danger()
+  if danger == 0 then return end
+
+  local t = smooth(danger % 30 / 30)
+  rectfill(0, 0, 128, 6, 8)
+
+  rectfill(t * 60, 0, 60 + t * 60, 6, 7)
+
+
+  print('danger', 90 - t * 60, 1, 8)
+  
+end
+
 
 function _update()
 
@@ -760,18 +888,14 @@ function _update()
   return
  end
 
+ danger = appr(danger, 0, 1)
+ if danger > 0 then
+  add_danger()
+ else
+  add_regular()
+ end
+
  update_score()
-
- if rnd() < 0.04 then
-  add_homing(-20, -20)
- elseif rnd() < 0.05 then
-  add_homing(0, rnd(200) - 30)
- end
-
- if rnd() < 0.18 then
-  add_line()
- end
-
  update_player_knock()
  update_player()
 
@@ -786,9 +910,13 @@ function _update()
  for sh in all(shards) do
   update_shard(sh)
  end
-
+ 
  for fo in all(foods) do
   update_food(fo)
+ end
+
+ for bo in all(bombs) do
+  update_bomb(bo)
  end
 
 end
@@ -798,7 +926,7 @@ function _draw()
  cls()
  camera()
 
- rectfill(0, 0, 128, 128)
+ rectfill(0, 0, 128, 128, 0)
 
 
  camera(_camera.x * 0.6, _camera.y * 0.6)
@@ -807,8 +935,8 @@ function _draw()
 
  camera()
  draw_score()
-
-
+ draw_danger()
+ draw_energy()
 
  camera(_camera.x * 0.9, _camera.y * 0.9)
  for gr in all(grass) do
@@ -843,14 +971,27 @@ function _draw()
  end
 
 
+ for bo in all(bombs) do
+  draw_bomb(bo)
+ end
+
+
  for sh in all(shards) do
   draw_shard(sh)
  end
 
 
- print(dbg, 0)
+ print(dbg, 8)
 
 end
+
+-->8
+
+
+function smooth(p)
+ return p*p*(3-2*p);
+end
+
 
 -->8
 
@@ -882,6 +1023,13 @@ function appra(value, target, by)
   local sign = (diff > 0 and 1 or -1)
   local offset = min(abs(by), abs(diff)) * sign
   return wrap_value(value + offset, 0, 1)
+end
+
+function point_circle(l1, c1, r)
+  local xx = l1.x - c1.x
+  local yy = l1.y - c1.y
+
+  return xx * xx + yy * yy < r * r
 end
 
 function line_line(l1, l2, c1, c2)
@@ -994,11 +1142,11 @@ __gfx__
 007007000ccc0cc0ccccccc0cc0ccc00000000000000000000000000000000000000000000000000000cc0000000000000000000000000000000000000000000
 000000000cc0ccc00cccc0000ccccc00000000000000000000000000000000000000000000000000000cc0000000000000000000000000000000000000000000
 0000000000cccc000000000000ccc0000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000077700000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000777000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000007770000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000077700000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000777000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
